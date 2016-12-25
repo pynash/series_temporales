@@ -1,21 +1,7 @@
 #!/usr/bin/env python
+# Copyright (c) 2016, Walter Vargas <pynash@gmail.com>
 
 import os
-
-
-def debug_cero(list_head):
-    # change decimal and add cero
-    for i in range(len(list_head)):
-        list_head[i][9] = '0' + list_head[i][9]
-        if list_head[i][8].startswith('.'):
-            list_head[i][8] = str(0) + list_head[i][8]
-        elif list_head[i][8].startswith('-'):
-            y = ''
-            list_tmp = list(list_head[i][8])
-            print list_tmp[i]
-            list_tmp[i].insert(8, '0')
-            list_head[i][8] = y
-    return list_head
 
 
 def count_est(lista):
@@ -26,51 +12,61 @@ def count_est(lista):
             clean.append(lista[i][2])
     return clean
 
+station = []
 
-def clear_column(listado):
-    # call for... estimate = clear_column(estimate)
-    # copy and join text, then del two value
-    tmp = listado[0][8]+'_'+listado[0][9]
-    del(listado[0][8])
-    del(listado[0][8])
-    # insert on 8position
-    listado[0].insert(8, tmp)
-    return listado[1:]
-
-
-def main():
+def read_and_write(file):
     estimate = []
+    # Text before, dont read:
+    for line in file:
+        if line.strip() == '+SOLUTION/ESTIMATE':
+        # Or whatever test is needed
+            break
+    # Reading the text at the end
+    for line in file:  # This keeps reading the file
+        if line.strip() == '-SOLUTION/ESTIMATE':
+            break
+        estimate.append(line.split())
+    estimate = estimate[1:]
+        #for i in estimate:
+         #   print i
+        # estimate = clear_column(estimate)
+    write_general(str(file)+ ' Numero de Estaciones: ' + str(len(count_est(estimate)))+'\n')
+
+    dic = dict()
+
+    for i in estimate:
+    # select register for keys about an station
+        if i[2] in dic:
+            dic.setdefault(i[2], []).append([i[5], i[8], i[9]])
+        else:
+            dic[i[2]] = [[i[5], i[8], i[9]]]
+    write_general('estacion \tEPOCA   \tX \t\tSIGMA_X \t\tY \t\tSIGMA_Y \t\tZ \t\tSIGMA_Z\n')
+        #write_general(str(i)+'\t'+str(dic[i][0][0])+'\t'+str(dic[i][0][1])+'\t'+str(dic[i][0][2])+'\t'+str(dic[i][1][1])+'\t'+str(dic[i][1][2])+'\t'+str(dic[i][2][1])+'\t'+str(dic[i][2][2]))
+    for i in dic:
+        with open('./CSVs/XYZ.dat', 'a') as stat:
+            stat.write(str(i)+'\t'+str(dic[i][0][0])+'\t'+str(dic[i][0][1])+'\t'+str(dic[i][0][2])+'\t'+str(dic[i][1][1])+'\t'+str(dic[i][1][2])+'\t'+str(dic[i][2][1])+'\t'+str(dic[i][2][2])+'\n')
+        if i not in station:
+            station.append(i)
+            create_files_csv(i)
+        with open('./CSVs/'+str(i)+'.csv', 'a') as stat:
+            stat.write(str(dic[i][0][0])+'\t'+str(dic[i][0][1])+'\t'+str(float(dic[i][0][2]))+'\t'+str(float(dic[i][1][1]))+'\t'+str(float(dic[i][1][2]))+'\t'+str(float(dic[i][2][1]))+'\t'+str(float(dic[i][2][2]))+'\n')
+            #stat.write(str(float(dic[i][0][1]))+' \t '+str(float(dic[i][0][2]))+' \t '+str(float(dic[i][1][1]))+' \t '+str(float(dic[i][1][2]))+' \t '+str(float(dic[i][2][1]))+' \t '+str(float(dic[i][2][2]))+'\n')
+
+def write_general(line):
+    with open('./CSVs/XYZ.dat', 'a') as filexyz:
+        filexyz.write(line)
+
+def create_files_csv(fname):
+    with open('./CSVs/'+fname+'.csv', 'a') as stat:
+        stat.write('   fecha\t    \tX\t      \t   SIGMA X\t \t  Y\t   SIGMA Y\t     Z\t\t   SIGMA Z \n')
+
+
+if __name__=="__main__":
     path = './'
     f = os.listdir(path)
-    # for i in range(len(f)):
-    with open(str(path)+str(f[-1])) as file:
-        # Text before, dont read:
-        for line in file:
-            if line.strip() == '+SOLUTION/ESTIMATE':
-                # Or whatever test is needed
-                break
-        # Reading the text at the end
-        for line in file:  # This keeps reading the file
-            if line.strip() == '-SOLUTION/ESTIMATE':
-                break
-            estimate.append(line.split())
-        estimate = estimate[1:]
-        for i in estimate:
-            print i
-        # estimate = clear_column(estimate)
-        print f[-1] + ' Numero de Estaciones: ' + str(len(count_est(estimate)))
-
-        dic = dict()
-
-        for i in estimate:
-            # select register for keys about an station
-            if i[2] in dic:
-                dic.setdefault(i[2], []).append([i[5], i[8], i[9]])
-            else:
-                dic[i[2]] = [[i[5], i[8], i[9]]]
-        print 'estacion \tEPOCA   \tX \t\tSIGMA_X \t\tY \t\tSIGMA_Y \t\tZ \t\tSIGMA_Z'
-        for i in dic:
-            print str(i)+'\t'+str(dic[i][0][0])+'\t'+str(dic[i][0][1])+'\t'+str(dic[i][0][2])+'\t'+str(dic[i][1][1])+'\t'+str(dic[i][1][2])+'\t'+str(dic[i][2][1])+'\t'+str(dic[i][2][2])
-
-
-main()
+    f.sort()
+    #for i in range(len(f)):
+    for i in f:
+        if i.endswith(".SNX"):
+            with open(str(path)+str(i)) as file:
+                read_and_write(file)
